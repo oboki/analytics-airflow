@@ -33,7 +33,7 @@
 #                        all the build essentials. This makes the image
 #                        much smaller.
 #
-ARG AIRFLOW_VERSION="2.2.0.dev0"
+ARG AIRFLOW_VERSION="2.2.1"
 ARG AIRFLOW_EXTRAS="amazon,async,celery,cncf.kubernetes,dask,docker,elasticsearch,ftp,google,google_auth,grpc,hashicorp,http,ldap,microsoft.azure,mysql,odbc,pandas,postgres,redis,sendgrid,sftp,slack,ssh,statsd,virtualenv"
 ARG ADDITIONAL_AIRFLOW_EXTRAS=""
 ARG ADDITIONAL_PYTHON_DEPS=""
@@ -41,7 +41,7 @@ ARG ADDITIONAL_PYTHON_DEPS=""
 ARG AIRFLOW_HOME=/opt/airflow
 ARG AIRFLOW_UID="50000"
 
-ARG PYTHON_BASE_IMAGE="python:3.6-slim-buster"
+ARG PYTHON_BASE_IMAGE="python:3.7-slim-buster"
 
 ARG AIRFLOW_PIP_VERSION=21.2.4
 ARG AIRFLOW_IMAGE_REPOSITORY="https://github.com/apache/airflow"
