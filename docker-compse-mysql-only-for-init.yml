@@ -1,0 +1,20 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:8.0.27
+    environment:
+      MYSQL_DATABASE: 'airflow'
+      MYSQL_USER: 'airflow'
+      MYSQL_PASSWORD: 'airflow'
+      MYSQL_ROOT_PASSWORD: 'root'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-proot"]
+      timeout: 10s
+      retries: 10
+    volumes:
+      - ${PWD}/mnt/mysql:/var/lib/mysql
+    restart: always

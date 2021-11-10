@@ -1,0 +1,39 @@
+version: '3'
+x-airflow-common:
+  &airflow-common
+  image: oboki/airflow:2.2.1-py37
+  environment:
+    &airflow-common-env
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+  volumes:
+    - ${PWD}/mnt/dags:/opt/airflow/dags
+    - ${PWD}/mnt/logs:/opt/airflow/logs
+    - ${PWD}/mnt/plugins:/opt/airflow/plugins
+    - ${PWD}/mnt/airflow.cfg:/opt/airflow/airflow.cfg
+    - ${PWD}/mnt/webserver_config.py:/opt/airflow/webserver_config.py
+  user: "${AIRFLOW_UID:-50000}:0"
+  networks:
+    - rollingpin-network
+
+services:
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    hostname: oboki-compute-3
+    ports:
+      - 8793:8793
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    environment:
+      <<: *airflow-common-env
+      DUMB_INIT_SETSID: "0"
+
+networks:
+  rollingpin-network:
+    external: true

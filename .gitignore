@@ -1,0 +1,5 @@
+mnt/mysql/*
+venv/*
+logs
+.env
+__pycache__
