@@ -137,7 +137,14 @@ mysql>
 
 ## HA
 
+https://docs.celeryproject.org/en/stable/getting-started/backends-and-brokers/index.html#sqlalchemy
+
 ![](image_HA_archi.png)
+
+redis memcache 를 queue 로 사용하는게 일반적인 것 같은데 구성요소가 너무 많아짐.  
+컴팩트하게 구성하려면 sqla queue 를 쓰면 좋을 것 같은데 이슈가 많다고 함.
+
+![](https://vnsys.files.wordpress.com/2019/11/redis-cluster.png?w=640)
 
 ### 깡통 머신 설정
 
@@ -192,3 +199,72 @@ sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 docker-compose -version
 ```
+
+### DB
+
+#### kombu_*
+
+```sql
+mysql> desc kombu_queue;
++-------+--------------+------+-----+---------+----------------+
+| Field | Type         | Null | Key | Default | Extra          |
++-------+--------------+------+-----+---------+----------------+
+| id    | int          | NO   | PRI | NULL    | auto_increment |
+| name  | varchar(200) | YES  | UNI | NULL    |                |
++-------+--------------+------+-----+---------+----------------+
+2 rows in set (0.00 sec)
+
+mysql> desc kombu_message;
++-----------+------------+------+-----+---------+----------------+
+| Field     | Type       | Null | Key | Default | Extra          |
++-----------+------------+------+-----+---------+----------------+
+| id        | int        | NO   | PRI | NULL    | auto_increment |
+| visible   | tinyint(1) | YES  | MUL | NULL    |                |
+| timestamp | datetime   | YES  | MUL | NULL    |                |
+| payload   | text       | NO   |     | NULL    |                |
+| version   | smallint   | NO   |     | NULL    |                |
+| queue_id  | int        | YES  | MUL | NULL    |                |
++-----------+------------+------+-----+---------+----------------+
+6 rows in set (0.00 sec)
+
+mysql> 
+```
+
+#### celery_*
+
+```sql
+mysql> desc celery_taskmeta;
++-----------+--------------+------+-----+---------+----------------+
+| Field     | Type         | Null | Key | Default | Extra          |
++-----------+--------------+------+-----+---------+----------------+
+| id        | int          | NO   | PRI | NULL    | auto_increment |
+| task_id   | varchar(155) | YES  | UNI | NULL    |                |
+| status    | varchar(50)  | YES  |     | NULL    |                |
+| result    | blob         | YES  |     | NULL    |                |
+| date_done | datetime     | YES  |     | NULL    |                |
+| traceback | text         | YES  |     | NULL    |                |
+| name      | varchar(155) | YES  |     | NULL    |                |
+| args      | blob         | YES  |     | NULL    |                |
+| kwargs    | blob         | YES  |     | NULL    |                |
+| worker    | varchar(155) | YES  |     | NULL    |                |
+| retries   | int          | YES  |     | NULL    |                |
+| queue     | varchar(155) | YES  |     | NULL    |                |
++-----------+--------------+------+-----+---------+----------------+
+12 rows in set (0.00 sec)
+
+mysql> desc celery_tasksetmeta;
++------------+--------------+------+-----+---------+----------------+
+| Field      | Type         | Null | Key | Default | Extra          |
++------------+--------------+------+-----+---------+----------------+
+| id         | int          | NO   | PRI | NULL    | auto_increment |
+| taskset_id | varchar(155) | YES  | UNI | NULL    |                |
+| result     | blob         | YES  |     | NULL    |                |
+| date_done  | datetime     | YES  |     | NULL    |                |
++------------+--------------+------+-----+---------+----------------+
+4 rows in set (0.00 sec)
+
+mysql> 
+```
+
+
+* worker 노드에서 8793 포트 개방 필요
