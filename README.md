@@ -14,7 +14,7 @@
 ```bash
 # init
 sudo rm -rf mnt/mysql/*
-docker-compose up airflow-init
+docㅏer-compose up airflow-init
 docker-compose up -d
 
 # create conn `fs_default`
@@ -268,3 +268,44 @@ mysql>
 
 
 * worker 노드에서 8793 포트 개방 필요
+
+
+코멘트
+
+- 모든 worker  
+- worker queue load balance rule
+- mysql 스키마 추가되는 부분은 찬 한테 관리 방안 문의해볼 것
+  - paritioned table
+
+* 꼭 업그레이드 해야하는 이유
+  * HA
+  * 추후 유지보수
+
+* redis ..........
+  * active *3 말고 master & slave * 1 세트로 구성해서 경량화하는 방법 알아보자
+
+* 업그레이드 말고 대안은 없을까?
+  * 테라스트림 -> mpd 
+  * 
+
+* 레디스 HA 설정 관련 아티클
+  * https://platib.tistory.com/32
+    * celery4.2 부터 sentinel 을 브로커로 사용할 수 있음
+  * https://sup2is.github.io/2020/07/22/redis-replication-with-sentinel.html
+  * https://github.com/bitnami/bitnami-docker-redis
+  * sentinel, hostname support
+    * http://redisgate.kr/redis/sentinel/sentinel_announce.php
+    * redis6.2
+
+
+nvidia driver 418.40.04
+docker 설치 및 nvidia 런타임 설정
+python3.6 (3.6.10 이상)
+jdk1.8
+
+
+
+https://towardsdatascience.com/data-engineers-shouldnt-write-airflow-dags-b885d57737ce
+
+dynamic DAG 활용의 방향성을 잘 정리한 것 같아서 공유 드립니다~!
+part 2 에서는 castor 라는 자기들 작업물 홍보(?)하는데 마크가 지난번에 공유해주신 dag-factory 랑 같이 참고하면 좋을 것 같아요!
