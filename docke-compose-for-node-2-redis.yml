@@ -1,0 +1,35 @@
+version: '3' 
+services:
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=oboki-compute-1
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_REPLICA_IP=oboki-compute-2
+    ports:
+      - 6379:6379
+#    volumes:
+#      - ./mnt:/opt/bitnami/redis
+#      - ./mnt/etc:/opt/bitnami/redis/etc
+#      - ./mnt/etc/redis.conf:/opt/bitnami/redis/etc/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s 
+      retries: 50
+
+  redis-sentinel:
+    image: 'bitnami/redis-sentinel:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_MASTER_HOST=oboki-compute-1
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_SET=mymaster
+      - REDIS_SENTINEL_QUORUM=2
+      - REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS=5000
+      - REDIS_SENTINEL_ANNOUNCE_HOSTNAMES=yes
+      - REDIS_SENTINEL_ANNOUNCE_IP=oboki-compute-2
+    ports:
+      - 26379:26379
