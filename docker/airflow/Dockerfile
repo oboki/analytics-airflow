@@ -458,6 +458,8 @@ EXPOSE 8080
 
 RUN usermod -g 0 airflow -G 0
 
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+
 USER ${AIRFLOW_UID}
 
 LABEL org.apache.airflow.distro="debian" \
