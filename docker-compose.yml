@@ -1,0 +1,152 @@
+version: '3'
+x-airflow-common:
+  &airflow-common
+  image: oboki/airflow:2.2.4-r220322
+  environment:
+    &airflow-common-env
+    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+  volumes:
+    - ${PWD}/mnt/dags:/opt/airflow/dags
+    - ${PWD}/mnt/logs:/opt/airflow/logs
+    - ${PWD}/mnt/plugins:/opt/airflow/plugins
+    - ${PWD}/mnt/airflow.cfg:/opt/airflow/airflow.cfg
+    - ${PWD}/mnt/webserver_config.py:/opt/airflow/webserver_config.py
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    - redis
+    - redis-sentinel
+  networks:
+    - rollingpin-network
+
+services:
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  airflow-worker:
+    <<: *airflow-common
+    command: celery worker
+    hostname: worker-1
+    ports:
+      - 8793:8793
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"'
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    environment:
+      <<: *airflow-common-env
+      DUMB_INIT_SETSID: "0"
+
+  flower:
+    <<: *airflow-common
+    command: celery flower
+    ports:
+      - 5555:5555
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  nginx-proxy:
+    depends_on:
+      - airflow-webserver
+    image: nginx:1.21.3-alpine
+    volumes:
+      - ${PWD}/mnt/nginx.conf:/etc/nginx/nginx.conf
+      - ${PWD}/mnt/logs:/etc/nginx/logs
+      - ${PWD}/mnt/certs:/etc/nginx/certs
+      - ${PWD}/mnt/html:/etc/nginx/html
+    ports:
+      - 443:443
+      - 80:80
+    networks:
+      - rollingpin-network
+
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_MASTER_HOST=airflow-1
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_REPLICA_IP=airflow-1
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    networks:
+      - rollingpin-network
+
+  redis-sentinel:
+    image: 'bitnami/redis-sentinel:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_MASTER_HOST=airflow-1
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_SET=mymaster
+      - REDIS_SENTINEL_QUORUM=1
+      - REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS=5000
+      - REDIS_SENTINEL_ANNOUNCE_HOSTNAMES=yes
+      - REDIS_SENTINEL_ANNOUNCE_IP=airflow-1
+    ports:
+      - 26379:26379
+    networks:
+      - rollingpin-network
+
+  mysql:
+    image: mysql:8.0.27
+    environment:
+      MYSQL_DATABASE: 'airflow'
+      MYSQL_USER: 'airflow'
+      MYSQL_PASSWORD: 'airflow'
+      MYSQL_ROOT_PASSWORD: 'root'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-proot"]
+      timeout: 10s
+      retries: 10
+    volumes:
+      - ${PWD}/mnt/mysql:/var/lib/mysql
+    restart: always
+    networks:
+      - rollingpin-network
+
+networks:
+  rollingpin-network:
+    external: true

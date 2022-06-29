@@ -504,6 +504,9 @@ EXPOSE 8080
 
 RUN usermod -g 0 airflow -G 0
 
+RUN chmod 0644 /etc/passwd
+RUN rm -f /usr/bin/ssh
+RUN sed -i 's/umask 002/umask 002/g' /etc/profile
 RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
 
 USER ${AIRFLOW_UID}
